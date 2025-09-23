@@ -63,7 +63,7 @@ public class GiftCardServiceImpl implements GiftCardService {
         //If the giftcard balance is less than the amount to redeem, then use all the giftcard amount
         if(giftCard.getAmount()<amountToRedeem){
             ledgerEntry.setAmount(giftCard.getAmount());
-            //Remaining amount will be paid by user by some other means
+            // The Remaining amount will be paid by user by some other means
             Double balanceToBePaid = amountToRedeem-giftCard.getAmount();
             ledgerEntryRepository.save(ledgerEntry);
             giftCard.setAmount(0);
