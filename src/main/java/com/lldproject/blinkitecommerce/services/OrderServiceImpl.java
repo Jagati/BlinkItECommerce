@@ -4,16 +4,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import com.lldproject.blinkitecommerce.exceptions.*;
 import org.springframework.data.util.Pair;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.lldproject.blinkitecommerce.exceptions.HighDemandProductException;
-import com.lldproject.blinkitecommerce.exceptions.InvalidAddressException;
-import com.lldproject.blinkitecommerce.exceptions.ProductNotFoundException;
-import com.lldproject.blinkitecommerce.exceptions.OutOfStockException;
-import com.lldproject.blinkitecommerce.exceptions.UserNotFoundException;
 import com.lldproject.blinkitecommerce.models.Address;
 import com.lldproject.blinkitecommerce.models.HighDemandProduct;
 import com.lldproject.blinkitecommerce.models.Inventory;
@@ -114,6 +110,45 @@ public class OrderServiceImpl implements OrderService {
         for (OrderDetail orderDetail : finalOrderDetails) {
             orderDetail.setOrder(order);
             orderDetailRepository.save(orderDetail);
+        }
+        return order;
+    }
+
+    @Override
+    @Transactional
+    public Order cancelOrder(int orderId, int userId)  throws UserNotFoundException, OrderNotFoundException, OrderDoesNotBelongToUserException, OrderCannotBeCancelledException{
+        Optional<User> userOp = userRepository.findById(userId);
+        if(userOp.isEmpty()){
+            throw new UserNotFoundException("user not found");
+        }
+        User user = userOp.get();
+        Optional<Order> orderOp = orderRepository.findById(orderId);
+        if(orderOp.isEmpty()){
+            throw new OrderNotFoundException("order not found");
+        }
+        Order order = orderOp.get();
+        if(!user.getOrders().contains(order)){
+            throw new OrderDoesNotBelongToUserException("order does not belong to user");
+        }
+        if(order.getOrderStatus()==OrderStatus.CANCELLED || order.getOrderStatus()==OrderStatus.SHIPPED || order.getOrderStatus()==OrderStatus.DELIVERED){
+            throw new OrderCannotBeCancelledException("order cannot be cancelled");
+        }
+        order.setOrderStatus(OrderStatus.CANCELLED);
+        orderRepository.save(order);
+        List<OrderDetail> orderDetails = order.getOrderDetails();
+        for(OrderDetail orderDetail: orderDetails){
+            Product product = orderDetail.getProduct();
+            int quantity = orderDetail.getQuantity();
+            Optional<Inventory> inventoryOp = inventoryRepository.findByProduct_Id(product.getId());
+            if(inventoryOp.isEmpty()){
+                Inventory newInventory = new Inventory();
+                newInventory.setProduct(product);
+                newInventory.setQuantity(quantity);
+                inventoryRepository.save(newInventory);
+            }
+            Inventory inventory = inventoryOp.get();
+            inventory.setQuantity(inventory.getQuantity()+quantity);
+            inventoryRepository.save(inventory);
         }
         return order;
     }

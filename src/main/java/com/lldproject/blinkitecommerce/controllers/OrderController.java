@@ -1,8 +1,6 @@
 package com.lldproject.blinkitecommerce.controllers;
 
-import com.lldproject.blinkitecommerce.dtos.PlaceOrderRequestDto;
-import com.lldproject.blinkitecommerce.dtos.PlaceOrderResponseDto;
-import com.lldproject.blinkitecommerce.dtos.ResponseStatus;
+import com.lldproject.blinkitecommerce.dtos.*;
 import com.lldproject.blinkitecommerce.models.Order;
 import com.lldproject.blinkitecommerce.services.OrderService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +25,21 @@ public class OrderController {
             System.out.println(e.getMessage());
             responseDto.setStatus(ResponseStatus.FAILURE);
         }
+        return responseDto;
+    }
+
+    public CancelOrderResponseDto cancelOrder(CancelOrderRequestDto cancelOrderRequestDto) {
+        CancelOrderResponseDto responseDto = new CancelOrderResponseDto();
+        try{
+            Order order = orderService.cancelOrder(cancelOrderRequestDto.getOrderId(), cancelOrderRequestDto.getUserId());
+            responseDto.setOrder(order);
+            responseDto.setStatus(ResponseStatus.SUCCESS);
+        }
+        catch(Exception e){
+            System.out.println(e.getMessage());
+            responseDto.setStatus(ResponseStatus.FAILURE);
+        }
+
         return responseDto;
     }
 
